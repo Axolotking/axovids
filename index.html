@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101214"><title>AxoVids</title>
+<style>
+:root{--bg:#101214;--panel:#1b1e22;--line:#2b3036;--ink:#f2f4f5;--dim:#9aa3ab;--aqua:#2fd6b4;--red:#ff0033;--gill:#ff8fb3;color-scheme:dark}
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 ui-monospace,Consolas,Menlo,monospace;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:2px solid var(--aqua)}
+header .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px;margin-right:auto;cursor:pointer}
+header .brand svg{width:30px;height:30px}
+button{font:inherit;color:var(--ink);background:#2c3138;border:0;padding:9px 14px;cursor:pointer;border-radius:4px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+.go{background:var(--aqua);color:#06110e;font-weight:700}.hot{background:var(--red)}
+main{flex:1;min-height:0;position:relative}
+.view{display:none;height:100%;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0))}
+.view.on{display:block}#feedv.on{display:flex;padding:0}
+h2{text-align:center;margin-bottom:14px}.sub{color:var(--dim);text-align:center;margin-bottom:14px}
+label{display:block;color:var(--dim);margin:12px 0 4px}
+input,textarea,select{width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--dim);padding:9px;font:inherit;border-radius:3px}
+.row{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.item{background:var(--panel);padding:12px 14px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
+#feed{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+.short{height:100%;scroll-snap-align:start;position:relative;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+.short .media{height:100%;max-width:100%;aspect-ratio:9/16;object-fit:cover;background:#16191d}
+.short svg.media{width:auto}
+.cap{position:absolute;left:0;right:76px;bottom:0;padding:44px 14px 14px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.cap b{display:block;font-size:16px}.cap span{color:#d3d9de}
+.cap a{color:var(--aqua);margin-right:8px;cursor:pointer}
+.rail{position:absolute;right:8px;bottom:84px;display:flex;flex-direction:column;gap:8px}
+.rail button{width:60px;padding:10px 0;font-size:12px;background:rgba(27,30,34,.88)}
+.rail .on{background:var(--gill);color:#2a0612;font-weight:700}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:16px;width:min(92vw,420px);max-height:70vh;margin:auto}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog .c{padding:8px 0;border-bottom:1px solid var(--line)}
+.pfp{width:96px;height:96px;margin:10px auto;background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--dim);overflow:hidden;font-size:12px}.pfp img{width:100%;height:100%;object-fit:cover}
+@media (prefers-reduced-motion:no-preference){.logo-wiggle{animation:w 1.4s ease-in-out 1}@keyframes w{50%{transform:rotate(-8deg)}}}
+</style></head><body>
+<header><div class="brand" onclick="show('feedv')"><svg class="logo-wiggle" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#2b3036"/><g stroke="#ff8fb3" stroke-width="26" stroke-linecap="round" fill="none"><path d="M150 210C100 190 80 150 92 112M142 258C84 258 56 232 50 192M362 210C412 190 432 150 420 112M370 258C428 258 456 232 462 192"/></g><ellipse cx="256" cy="290" rx="130" ry="112" fill="#2fd6b4"/><circle cx="212" cy="270" r="14" fill="#101214"/><circle cx="300" cy="270" r="14" fill="#101214"/><path d="M214 322Q256 356 298 322" stroke="#101214" stroke-width="12" stroke-linecap="round" fill="none"/></svg>AxoVids</div>
+<button id="acctBtn" onclick="show('acctv')">Account</button><button class="hot" onclick="show('upv')">Upload</button><button onclick="show('seav')">Search</button></header>
+<main>
+<section id="feedv" class="view on"><div id="feed"></div></section>
+
+<section id="seav" class="view"><h2>Search</h2>
+<div style="display:flex;gap:8px"><input id="q" placeholder="Search videos and creators" oninput="doSearch()"><select id="qt" style="width:110px" onchange="doSearch()"><option>All</option><option>Videos</option><option>Creators</option></select></div><div id="res"></div></section>
+
+<section id="profv" class="view"><h2 id="pn"></h2><p class="sub" id="ps"></p><div class="row"><button class="go" id="pf" onclick="toggleFollow(curProf)">Follow</button></div><p class="sub" style="margin-top:22px">Posted videos</p><div id="pv"></div></section>
+
+<section id="upv" class="view"><h2>Upload a short</h2><p class="sub">Add a title and description, then publish a video or picture to the feed.</p>
+<label for="ut">Title</label><input id="ut"><label for="ud">Description</label><textarea id="ud" rows="4"></textarea>
+<p class="sub" id="uf" style="margin-top:14px">No file selected</p><input type="file" id="ufile" accept="video/*,image/*" hidden>
+<div class="row"><button onclick="ufile.click()">Choose video or picture</button></div>
+<div class="row"><button class="hot" onclick="publish()">Publish video</button></div><div class="row"><button onclick="show('feedv')">Back to feed</button></div></section>
+
+<section id="acctv" class="view"><h2 id="an">Sign in</h2><p class="sub" id="as">Create an account on this device to post and follow.</p>
+<div class="pfp" id="pfp">No profile picture</div>
+<label for="un">Username</label><input id="un" autocomplete="username"><label for="em">Email</label><input id="em" type="email"><label for="pw">Password</label><input id="pw" type="password">
+<div class="row"><button class="go" onclick="login()">Log in</button><button onclick="login(true)">Create account</button></div>
+<input type="file" id="pimg" accept="image/*" hidden><div class="row"><button onclick="pimg.click()">Choose profile picture</button></div>
+<div class="row"><button class="hot" onclick="delAcct()">Delete my account</button></div><div id="mine"></div></section>
+</main>
+<dialog id="cm"><b>Comments</b><div id="cl"></div><input id="ci" placeholder="Add a comment" style="margin-top:10px"><div class="row"><button class="go" onclick="addComment()">Post comment</button><button onclick="cm.close()">Close</button></div></dialog>
+<script>
+const $=id=>document.getElementById(id);
+function art(bg1,bg2,body,t){return `<svg class="media" viewBox="0 0 360 640" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g${t}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg1}"/><stop offset="1" stop-color="${bg2}"/></linearGradient></defs><rect width="360" height="640" fill="url(#g${t})"/><circle cx="60" cy="120" r="9" fill="#fff" opacity=".35"/><circle cx="300" cy="200" r="14" fill="#fff" opacity=".25"/><circle cx="250" cy="90" r="6" fill="#fff" opacity=".4"/><g stroke="#ff8fb3" stroke-width="16" stroke-linecap="round" fill="none"><path d="M110 290C70 275 55 245 62 215M104 330C62 330 42 312 38 282M250 290C290 275 305 245 298 215M256 330C298 330 318 312 322 282"/></g><ellipse cx="180" cy="360" rx="95" ry="82" fill="${body}"/><circle cx="148" cy="345" r="11" fill="#101214"/><circle cx="212" cy="345" r="11" fill="#101214"/><path d="M150 388Q180 412 210 388" stroke="#101214" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M180 440 Q150 540 90 560 Q170 580 200 470Z" fill="${body}" opacity=".85"/></svg>`}
+let vids=[
+{id:1,title:'Hello from the pond',desc:'First splash of the day.',by:'Axolotking',likes:1,art:art('#0b3d4a','#146b6b','#2fd6b4',1),c:[]},
+{id:2,title:'Sunset gills',desc:'Pink gills, orange sky.',by:'PondPal',likes:12,art:art('#6b1d3a','#d9772b','#ffb3c7',2),c:['So pretty!']},
+{id:3,title:'Night swim',desc:'Quiet water, bright stars.',by:'DeepBlue',likes:7,art:art('#0a0f2e','#3b2a7a','#8fb7ff',3),c:[]},
+{id:4,title:'Lime time',desc:'Snack break.',by:'Axolotking',likes:3,art:art('#1f4d12','#a7d129','#e9ff8a',4),c:[]}];
+let me=JSON.parse(localStorage.getItem('axo_me')||'null'),follows=new Set(JSON.parse(localStorage.getItem('axo_f')||'[]')),curProf='',curVid=null;
+const saveF=()=>localStorage.setItem('axo_f',JSON.stringify([...follows]));
+function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id===v));if(v==='acctv')renderAcct();if(v==='seav')doSearch();}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function renderFeed(){$('feed').innerHTML=vids.map(v=>`<div class="short" data-id="${v.id}">${v.art||(v.type==='video'?`<video class="media" src="${v.src}" loop playsinline muted></video>`:`<img class="media" src="${v.src}" alt="">`)}
+<div class="rail"><button class="${v.liked?'on':''}" onclick="like(${v.id})">${v.liked?'Liked':'Like'}<br>${v.likes}</button><button onclick="togglePlay(${v.id})">Pause</button><button onclick="openC(${v.id})">Comments<br>${v.c.length}</button></div>
+<div class="cap"><b>${esc(v.title)}</b><a onclick="prof('${esc(v.by)}')">@${esc(v.by)}</a><button style="padding:4px 10px" class="${follows.has(v.by)?'':'go'}" onclick="toggleFollow('${esc(v.by)}')">${follows.has(v.by)?'Following':'Follow'}</button><br><span>${esc(v.desc)}</span></div></div>`).join('');observe();}
+let io;function observe(){io&&io.disconnect();io=new IntersectionObserver(es=>es.forEach(e=>{const m=e.target.querySelector('video');if(m)e.isIntersecting?m.play().catch(()=>{}):m.pause()}),{threshold:.7});document.querySelectorAll('.short').forEach(s=>io.observe(s))}
+function togglePlay(id){const m=document.querySelector(`.short[data-id="${id}"] video`);if(m)m.paused?m.play():m.pause()}
+function like(id){const v=vids.find(x=>x.id===id);v.liked=!v.liked;v.likes+=v.liked?1:-1;const y=$('feed').scrollTop;renderFeed();$('feed').scrollTop=y}
+function toggleFollow(n){if(!me){alert('Log in to follow creators.');return show('acctv')}follows.has(n)?follows.delete(n):follows.add(n);saveF();const y=$('feed').scrollTop;renderFeed();$('feed').scrollTop=y;if(curProf===n)prof(n)}
+function openC(id){curVid=vids.find(x=>x.id===id);drawC();cm.showModal()}
+function drawC(){$('cl').innerHTML=curVid.c.length?curVid.c.map(c=>`<div class="c">${esc(c)}</div>`).join(''):'<div class="c" style="color:var(--dim)">No comments yet. Be the first.</div>'}
+function addComment(){const t=$('ci').value.trim();if(!t)return;curVid.c.push((me?me.name+': ':'')+t);$('ci').value='';drawC();const y=$('feed').scrollTop;renderFeed();$('feed').scrollTop=y}
+function prof(n){curProf=n;const mine=vids.filter(v=>v.by===n);$('pn').textContent='@'+n+(n==='Axolotking'?' [verified]':'');$('ps').textContent='Followers: '+(follows.has(n)?1:0)+'   Likes: '+mine.reduce((a,v)=>a+v.likes,0);$('pf').textContent=follows.has(n)?'Following':'Follow';$('pv').innerHTML=mine.map(v=>`<div class="item" onclick="goVid(${v.id})"><b>${esc(v.title)}</b></div>`).join('')||'<p class="sub">No videos yet.</p>';show('profv')}
+function goVid(id){show('feedv');document.querySelector(`.short[data-id="${id}"]`).scrollIntoView()}
+function doSearch(){const q=$('q').value.toLowerCase(),t=$('qt').value;let h='';if(t!=='Videos')[...new Set(vids.map(v=>v.by))].filter(n=>n.toLowerCase().includes(q)).forEach(n=>h+=`<div class="item" onclick="prof('${esc(n)}')"><b>${esc(n)}</b></div>`);if(t!=='Creators')vids.filter(v=>(v.title+v.desc).toLowerCase().includes(q)).forEach(v=>h+=`<div class="item" onclick="goVid(${v.id})"><b>${esc(v.title)}</b><span style="color:var(--dim)">@${esc(v.by)}</span></div>`);$('res').innerHTML=h||'<p class="sub" style="margin-top:20px">No results. Try a different word.</p>'}
+let upFile=null;$('ufile').onchange=e=>{upFile=e.target.files[0]||null;$('uf').textContent=upFile?upFile.name:'No file selected'};
+function publish(){if(!me){alert('Log in to publish.');return show('acctv')}const t=$('ut').value.trim();if(!t||!upFile){alert('Add a title and choose a file first.');return}vids.unshift({id:Date.now(),title:t,desc:$('ud').value,by:me.name,likes:0,c:[],type:upFile.type.startsWith('video')?'video':'image',src:URL.createObjectURL(upFile)});$('ut').value=$('ud').value='';upFile=null;$('uf').textContent='No file selected';renderFeed();show('feedv')}
+function login(create){const n=$('un').value.trim();if(!n||!$('pw').value){alert('Enter a username and password.');return}me={name:n,pic:me&&me.pic};localStorage.setItem('axo_me',JSON.stringify(me));renderAcct()}
+$('pimg').onchange=e=>{const f=e.target.files[0];if(!f||!me)return alert('Log in first.');const r=new FileReader();r.onload=()=>{me.pic=r.result;localStorage.setItem('axo_me',JSON.stringify(me));renderAcct()};r.readAsDataURL(f)};
+function delAcct(){if(!me||!confirm('Delete your account and its videos?'))return;vids=vids.filter(v=>v.by!==me.name);me=null;localStorage.removeItem('axo_me');renderFeed();renderAcct()}
+function renderAcct(){$('acctBtn').textContent=me?'Account: '+me.name:'Account';$('an').textContent=me?me.name+'’s account':'Sign in';$('as').textContent=me?'Signed in as '+me.name+'.':'Create an account on this device to post and follow.';$('pfp').innerHTML=me&&me.pic?`<img src="${me.pic}" alt="Profile picture">`:'No profile picture';$('mine').innerHTML=me?vids.filter(v=>v.by===me.name).map(v=>`<div class="item"><b>${esc(v.title)}</b><button class="hot" onclick="vids=vids.filter(x=>x.id!==${v.id});renderFeed();renderAcct()">Delete</button></div>`).join(''):''}
+renderFeed();renderAcct();
+</script></body></html>
