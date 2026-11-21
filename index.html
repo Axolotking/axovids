@@ -73,10 +73,15 @@ let me=JSON.parse(localStorage.getItem('axo_me')||'null'),follows=new Set(JSON.p
 const saveF=()=>localStorage.setItem('axo_f',JSON.stringify([...follows]));
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id===v));if(v==='acctv')renderAcct();if(v==='seav')doSearch();}
 function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function renderFeed(){$('feed').innerHTML=vids.map(v=>`<div class="short" data-id="${v.id}">${v.art||(v.type==='video'?`<video class="media" src="${v.src}" loop playsinline muted></video>`:`<img class="media" src="${v.src}" alt="">`)}
-<div class="rail"><button class="${v.liked?'on':''}" onclick="like(${v.id})">${v.liked?'Liked':'Like'}<br>${v.likes}</button><button onclick="togglePlay(${v.id})">Pause</button><button onclick="openC(${v.id})">Comments<br>${v.c.length}</button></div>
+function renderFeed(){$('feed').innerHTML=vids.map(v=>`<div class="short" data-id="${v.id}">${v.art||(v.type==='video'?`<video class="media" src="${v.src}" loop playsinline></video>`:`<img class="media" src="${v.src}" alt="">`)}
+<div class="rail"><button class="${v.liked?'on':''}" onclick="like(${v.id})">${v.liked?'Liked':'Like'}<br>${v.likes}</button><button onclick="togglePlay(${v.id})">Pause</button>${v.type==='video'?`<button class="snd" onclick="toggleSound()">${soundOn?'Sound on':'Sound off'}</button>`:''}<button onclick="openC(${v.id})">Comments<br>${v.c.length}</button></div>
 <div class="cap"><b>${esc(v.title)}</b><a onclick="prof('${esc(v.by)}')">@${esc(v.by)}</a><button style="padding:4px 10px" class="${follows.has(v.by)?'':'go'}" onclick="toggleFollow('${esc(v.by)}')">${follows.has(v.by)?'Following':'Follow'}</button><br><span>${esc(v.desc)}</span></div></div>`).join('');observe();}
-let io;function observe(){io&&io.disconnect();io=new IntersectionObserver(es=>es.forEach(e=>{const m=e.target.querySelector('video');if(m)e.isIntersecting?m.play().catch(()=>{}):m.pause()}),{threshold:.7});document.querySelectorAll('.short').forEach(s=>io.observe(s))}
+let soundOn=false;
+function playV(m){m.muted=!soundOn;m.play().catch(()=>{m.muted=true;m.play().catch(()=>{})})}
+function paintSound(){document.querySelectorAll('video').forEach(m=>m.muted=!soundOn);document.querySelectorAll('.snd').forEach(b=>b.textContent=soundOn?'Sound on':'Sound off')}
+function toggleSound(){soundOn=!soundOn;paintSound()}
+addEventListener('pointerdown',()=>{if(!soundOn){soundOn=true;paintSound();document.querySelectorAll('.short video').forEach(m=>{if(m.getBoundingClientRect().top>=-5&&m.getBoundingClientRect().top<innerHeight/2)playV(m)})}},{once:true});
+let io;function observe(){io&&io.disconnect();io=new IntersectionObserver(es=>es.forEach(e=>{const m=e.target.querySelector('video');if(m)e.isIntersecting?playV(m):m.pause()}),{threshold:.7});document.querySelectorAll('.short').forEach(s=>io.observe(s))}
 function togglePlay(id){const m=document.querySelector(`.short[data-id="${id}"] video`);if(m)m.paused?m.play():m.pause()}
 function like(id){const v=vids.find(x=>x.id===id);v.liked=!v.liked;v.likes+=v.liked?1:-1;const y=$('feed').scrollTop;renderFeed();$('feed').scrollTop=y}
 function toggleFollow(n){if(!me){alert('Log in to follow creators.');return show('acctv')}follows.has(n)?follows.delete(n):follows.add(n);saveF();const y=$('feed').scrollTop;renderFeed();$('feed').scrollTop=y;if(curProf===n)prof(n)}
